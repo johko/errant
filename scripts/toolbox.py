@@ -1,28 +1,31 @@
+from spacy.tokens import Doc
+
 # Load latest Hunspell dictionaries: 
 def loadDictionary(path):
 	return set(open(path).read().split())
 
 # Load Stanford Universal Tags map file. 
-def loadTagMap(path):
+def loadTagMap(path, args):
 	map_dict = {}
 	open_file = open(path).readlines()
 	for line in open_file:
 		line = line.strip().split("\t")
-		# Change ADP to PREP; makes it clearer
-		if line[1].strip() == "ADP":
-			map_dict[line[0]] = "PREP"
-		# Also change PROPN to NOUN; we don't need a prop noun tag
-		elif line[1].strip() == "PROPN":
-			map_dict[line[0]] = "NOUN"
-		else:
-			map_dict[line[0]] = line[1].strip()
+		map_dict[line[0]] = line[1].strip()
+		if args.lang == 'en':
+			# Change ADP to PREP; makes it clearer
+			if line[1].strip() == "ADP":
+				map_dict[line[0]] = "PREP"
+			# Also change PROPN to NOUN; we don't need a prop noun tag
+			elif line[1].strip() == "PROPN":
+				map_dict[line[0]] = "NOUN"
 	# Add some spacy PTB tags not in the original mapping.
-	map_dict['""'] = "PUNCT"
-	map_dict["SP"] = "SPACE"
-	map_dict["ADD"] = "X"
-	map_dict["GW"] = "X"
-	map_dict["NFP"] = "X"
-	map_dict["XX"] = "X"
+	if args.lang == 'en':
+		map_dict['""'] = "PUNCT"
+		map_dict["SP"] = "SPACE"
+		map_dict["ADD"] = "X"
+		map_dict["GW"] = "X"
+		map_dict["NFP"] = "X"
+		map_dict["XX"] = "X"
 	return map_dict	
 	
 # Input: A sentence + edit block in an m2 file.
@@ -88,11 +91,28 @@ def processEdits(edits):
 # Input 1: A list of token strings in a sentence.
 # Input 2: A preloaded Spacy processing object.
 # Annotate tokens with POS, lemma and parse info.
-def applySpacy(sent, nlp):
+def applySpacy(input_sent, nlp, args, treetagger=None):
 	# Convert tokens to spacy tokens and POS tag and parse.
-	sent = nlp.tokenizer.tokens_from_list(sent)
-	nlp.tagger(sent)
-	nlp.parser(sent)
+	if args.tok:
+		sent = nlp(input_sent)
+	else:
+		sent = Doc(nlp.vocab, input_sent.split())
+		nlp.tagger(sent)
+		nlp.parser(sent)
+
+	if treetagger:
+		import treetaggerwrapper
+		tokens = []
+		if args.tok:
+			tokens = [token.text for token in sent]
+		else:
+			tokens = input_sent.split()
+		tags = treetaggerwrapper.make_tags(treetagger.tag_text("\n".join(tokens) + "\n", tagonly=True))
+		if len(tokens) == len(tags):
+			for i in range(0, len(tags)):
+				if isinstance(tags[i], treetaggerwrapper.Tag):
+					sent[i].lemma_ = tags[i].lemma
+
 	return sent
 
 # Input 1: An edit list. [orig_start, orig_end, cat, cor, cor_start, cor_end]
@@ -129,3 +149,7 @@ def minimiseEdit(edit, orig, cor):
 def formatEdit(edit, coder_id=0):
 	span = " ".join(["A", str(edit[0]), str(edit[1])])
 	return "|||".join([span, edit[2], edit[3], "REQUIRED", "-NONE-", str(coder_id)])
+
+def formatAnnotation(sent):
+	ann = ["/".join([w.orth_, w.tag_, w.pos_, w.lemma_, w.dep_]) for w in sent]
+	return " ".join(ann)

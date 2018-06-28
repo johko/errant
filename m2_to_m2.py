@@ -1,23 +1,39 @@
 import argparse
 import os
 import spacy
-from nltk.stem.lancaster import LancasterStemmer
 import scripts.align_text as align_text
-import scripts.cat_rules as cat_rules
 import scripts.toolbox as toolbox
 
 def main(args):
 	# Get base working directory.
 	basename = os.path.dirname(os.path.realpath(__file__))
 	print("Loading resources...")
-	# Load Tokenizer and other resources
-	nlp = spacy.load("en")
-	# Lancaster Stemmer
-	stemmer = LancasterStemmer()
-	# GB English word list (inc -ise and -ize)
-	gb_spell = toolbox.loadDictionary(basename+"/resources/en_GB-large.txt")
-	# Part of speech map file
-	tag_map = toolbox.loadTagMap(basename+"/resources/en-ptb_map")	
+	spacy_disable = ['ner']
+	treetagger = None
+	if args.lang == "en":
+		from nltk.stem.lancaster import LancasterStemmer
+		import scripts.cat_rules as cat_rules
+		# Load Tokenizer and other resources
+		nlp = spacy.load("en", disable=spacy_disable)
+		# Lancaster Stemmer
+		stemmer = LancasterStemmer()
+		# GB English word list (inc -ise and -ize)
+		word_list = toolbox.loadDictionary(basename+"/resources/en_GB-large.txt")
+		# Part of speech map file
+		tag_map = toolbox.loadTagMap(basename+"/resources/en-ptb_map", args)
+	elif args.lang == "de":
+		from nltk.stem.snowball import GermanStemmer
+		import scripts.cat_rules_de as cat_rules
+		import treetaggerwrapper
+		treetagger = treetaggerwrapper.TreeTagger(TAGLANG="de",TAGDIR=basename+"/resources/tree-tagger-3.2")
+		# Load Tokenizer and other resources
+		nlp = spacy.load("de", disable=spacy_disable)
+		# German Snowball Stemmer
+		stemmer = GermanStemmer()
+		# DE word list from hunspell
+		word_list = toolbox.loadDictionary(basename+"/resources/de_DE-large.txt")
+		# Part of speech map file
+		tag_map = toolbox.loadTagMap(basename+"/resources/de-stts_map", args)
 	# Setup output m2 file
 	out_m2 = open(args.out, "w")
 
@@ -41,10 +57,15 @@ def main(args):
 				if gold_edits[0][2] == "noop":
 					out_m2.write(toolbox.formatEdit(gold_edits[0], coder)+"\n")				
 					continue
-				# Markup the orig and cor sentence with spacy (assume tokenized)
+				# Markup the orig and cor sentence with spacy
 				# Orig is marked up only once for the first coder that needs it.
-				proc_orig = toolbox.applySpacy(orig_sent, nlp) if not proc_orig else proc_orig
-				proc_cor = toolbox.applySpacy(cor_sent, nlp)
+				if not proc_orig:
+					proc_orig = toolbox.applySpacy(" ".join(orig_sent), nlp, args, treetagger)
+					if (args.ann):
+						out_m2.write("O "+toolbox.formatAnnotation(proc_orig)+"\n")
+				proc_cor = toolbox.applySpacy(" ".join(cor_sent), nlp, args, treetagger)
+				if (args.ann):
+					out_m2.write("C "+toolbox.formatAnnotation(proc_cor)+"\n")
 				# Loop through gold edits.
 				for gold_edit in gold_edits:
 					# Um and UNK edits (uncorrected errors) are always preserved.
@@ -61,18 +82,18 @@ def main(args):
 							if not gold_edit: continue
 						# Give the edit an automatic error type.
 						if not args.old_cats:
-							cat = cat_rules.autoTypeEdit(gold_edit, proc_orig, proc_cor, gb_spell, tag_map, nlp, stemmer)
+							cat = cat_rules.autoTypeEdit(gold_edit, proc_orig, proc_cor, word_list, tag_map, nlp, stemmer)
 							gold_edit[2] = cat
 						# Write the edit to the output m2 file.
 						out_m2.write(toolbox.formatEdit(gold_edit, coder)+"\n")
 				# Auto edits
 				if args.auto:
 					# Auto align the parallel sentences and extract the edits.
-					auto_edits = align_text.getAutoAlignedEdits(proc_orig, proc_cor, nlp, args)				
+					auto_edits = align_text.getAutoAlignedEdits(proc_orig, proc_cor, nlp, args)
 					# Loop through the edits.
 					for auto_edit in auto_edits:
 						# Give each edit an automatic error type.
-						cat = cat_rules.autoTypeEdit(auto_edit, proc_orig, proc_cor, gb_spell, tag_map, nlp, stemmer)
+						cat = cat_rules.autoTypeEdit(auto_edit, proc_orig, proc_cor, word_list, tag_map, nlp, stemmer)
 						auto_edit[2] = cat
 						# Write the edit to the output m2 file.
 						out_m2.write(toolbox.formatEdit(auto_edit, coder)+"\n")
@@ -89,6 +110,7 @@ if __name__ == "__main__":
 	type_group.add_argument("-auto", help="Extract edits automatically.", action="store_true")
 	type_group.add_argument("-gold", help="Use existing edit alignments.",	action="store_true")
 	parser.add_argument("-out",	help="The output filepath.", required=True)		
+	parser.add_argument("-lang", choices=["en", "de"], default="en", help="Input language. Currently supported: en (default), de\n")
 	parser.add_argument("-max_edits", help="Do not minimise edit spans. (gold only)", action="store_true")
 	parser.add_argument("-old_cats", help="Do not reclassify the edits. (gold only)", action="store_true")
 	parser.add_argument("-lev",	help="Use standard Levenshtein to align sentences.", action="store_true")
@@ -98,5 +120,7 @@ if __name__ == "__main__":
 								"all-split: Merge nothing; e.g. MSSDI -> M, S, S, D, I\n"
 								"all-merge: Merge adjacent non-matches; e.g. MSSDI -> M, SSDI\n"
 								"all-equal: Merge adjacent same-type non-matches; e.g. MSSDI -> M, SS, D, I")
+	parser.add_argument("-ann", help="Output automatic annotation.", action="store_true")
 	args = parser.parse_args()
+	args.tok = False
 	main(args)

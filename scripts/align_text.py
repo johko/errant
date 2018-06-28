@@ -41,7 +41,11 @@ def merge_edits(edits):
 	else:
 		return edits
 
-def check_split(source, target, edits):
+def check_split(source, target, edits, args):
+	# Check for empty strings
+	if len(source) == 0 or len(target) == 0:
+		return False
+
 	s = []
 	t = []
 	# Collect the tokens
@@ -62,38 +66,29 @@ def check_split(source, target, edits):
 	else:
 		return False
 	# Check split
-	if string.startswith(tokens[0]): # Matches beginning
-		string = string[len(tokens[0]):]
-		if string.endswith(tokens[-1]): # Matches end
-			string = string[:-len(tokens[-1])]
-			# Matches all tokens in the middle (in order)
-			match = True
-			for t in tokens[1:-1]:
-				try:
-					i = string.index(t)
-					string = string[i+len(t):]
-				except:
-					# Token not found
-					return False
-			# All tokens found
-			return True
-	# Any other case is False
-	return False
+	# For German, case-insensitive for compound errors such as:
+	#  Geburtstag Party -> Geburtstagparty
+	if args.lang == "de":
+		return string.lower() == "".join(tokens).lower()
+	# Case-sensitive for English and other languages
+	else:
+		return string == "".join(tokens)
 
 # Input 1: Spacy source sentence
 # Input 2: Spacy target sentence
-# Input 3: The alignmen between the 2; [e.g. M, M, S ,S M]
+# Input 3: The alignment between the 2; [e.g. M, M, S ,S M]
+# Input 4: Main script command-line args.
 # Function that decide whether to merge, or keep separate, adjacent edits of various types
 # Processes 1 alignment at a time
-def get_edits(source, target, edits):
+def get_edits(source, target, edits, args):
 	if len(edits) < 1:
 		return edits
 	elif edits[0][0] == "M":
 #		print("RULE 1")
-		return get_edits(source, target, edits[1:])
+		return get_edits(source, target, edits[1:], args)
 	elif edits[-1][0] == "M":
 #		print("RULE 1")
-		return get_edits(source, target, edits[:-1])
+		return get_edits(source, target, edits[:-1], args)
 	else:
 		VP = [POS.VERB, POS.PART]
 		merge = False
@@ -107,7 +102,7 @@ def get_edits(source, target, edits):
 			op = e[0]
 			if op == "M": # M in the middle => split
 #				print("RULE 1")
-				return get_edits(source, target, edits[:i]) + get_edits(source, target, edits[i+1:])
+				return get_edits(source, target, edits[:i], args) + get_edits(source, target, edits[i+1:], args)
 			# Get the affected tokens
 			s = source[e[1]:e[2]][0] if len(source[e[1]:e[2]]) >= 1 else None
 			t = target[e[3]:e[4]][0] if len(target[e[3]:e[4]]) >= 1 else None
@@ -126,29 +121,29 @@ def get_edits(source, target, edits):
 			if ((s and (ispunct(s) or s.orth_[0].isupper())) or (t and (ispunct(t) or t.orth_[0].isupper()))) and \
 			   s_ and t_ and s_.lower_ == t_.lower_ and s_.orth_[0] != t_.orth_[0]: 
 #				print("RULE 2")
-				return get_edits(source, target, edits[:i]) + merge_edits(edits[i:j+1]) + get_edits(source, target, edits[j+1:])
+				return get_edits(source, target, edits[:i], args) + merge_edits(edits[i:j+1]) + get_edits(source, target, edits[j+1:], args)
 			# Keep all T separate.
 			elif op.startswith("T"):
 #				print("RULE 3")
-				return get_edits(source, target, edits[:i]) + [e] + get_edits(source, target, edits[i+1:])
+				return get_edits(source, target, edits[:i], args) + [e] + get_edits(source, target, edits[i+1:], args)
 			# Merge some possessives.
 			elif ((s and s.tag_ == "POS") or (t and t.tag_ == "POS")):
 #				print("RULE 4")
-				return merge_edits(edits[:i+1]) + get_edits(source, target, edits[i+1:])
+				return merge_edits(edits[:i+1]) + get_edits(source, target, edits[i+1:], args)
 			# Merge things like sub way -> subway. Some more possessives.
-			elif (s_ or t_) and check_split(source, target, edits[i:j+1]):
+			elif (s_ or t_) and check_split(source, target, edits[i:j+1], args):
 #				print("RULE 5")
-				return get_edits(source, target, edits[:i]) + merge_edits(edits[i:j+1]) + get_edits(source, target, edits[j+1:])
+				return get_edits(source, target, edits[:i], args) + merge_edits(edits[i:j+1]) + get_edits(source, target, edits[j+1:], args)
 			# Adjacent subsittution rules.
 			elif op == "S":
 				# If tokens are very similar => split (spelling errors)			
 				if char_cost(s.orth_, t.orth_) < 0.3 and not (equal_pos and i > 0):
 #					print("RULE 6")
-					return get_edits(source, target, edits[:i]) + [e] + get_edits(source, target, edits[i+1:])
+					return get_edits(source, target, edits[:i], args) + [e] + get_edits(source, target, edits[i+1:], args)
 				# Consecutive substitutions are split.
 				elif old_op == "S": 
 #					print("RULE 7")
-					return get_edits(source, target, edits[:i]) + [e] + get_edits(source, target, edits[i+1:])
+					return get_edits(source, target, edits[:i], args) + [e] + get_edits(source, target, edits[i+1:], args)
 				# Merge if at least one content word		
 				else:
 #					print("RULE 8")
@@ -281,7 +276,7 @@ def getAutoAlignedEdits(orig, cor, spacy, args):
 	# Get the alignment with the highest score. There is usually only 1 best in DL due to custom costs.
 	alignment = next(alignments.alignments(True)) # True uses Depth-first search.
 	# Convert the alignment into edits; choose merge strategy
-	if args.merge == "rules": edits = get_edits(orig, cor, get_opcodes(alignment))
+	if args.merge == "rules": edits = get_edits(orig, cor, get_opcodes(alignment), args)
 	elif args.merge == "all-split": edits = get_edits_split(get_opcodes(alignment))
 	elif args.merge == "all-merge": edits = get_edits_group_all(get_opcodes(alignment))
 	elif args.merge == "all-equal": edits = get_edits_group_type(get_opcodes(alignment))
