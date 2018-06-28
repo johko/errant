@@ -88,14 +88,14 @@ Three main scripts are provided with ERRANT: `parallel_to_m2.py`, `m2_to_m2.py` 
 	 python3 parallel_to_m2.py -orig <orig_file> -cor <cor_file> -out <out_m2>
 	 ```
 
-The script has been extended to work with German alongside English including
-the options:
+		The script has been extended to work with German alongside English
+		including the options:
 
-```
--lang {en,de}         Input language. Currently supported: en (default), de
--tok                  Tokenize input using spacy tokenizer.
--ann                  Output automatic annotation.
-```
+    ```
+    -lang {en,de}         Input language. Currently supported: en (default), de
+    -tok                  Tokenize input using spacy tokenizer.
+    -ann                  Output automatic annotation.
+    ```
 
 2. `m2_to_m2.py` 
 
@@ -105,12 +105,12 @@ the options:
 	 python3 m2_to_m2.py {-auto|-gold} m2_file -out <out_m2>
 	 ```
 
-The script has been extended to work with German alongside English including the options:
+    The script has been extended to work with German alongside English including the options:
 
-```
--lang {en,de}         Input language. Currently supported: en (default), de
--ann                  Output automatic annotation.
-```
+    ```
+    -lang {en,de}         Input language. Currently supported: en (default), de
+    -ann                  Output automatic annotation.
+    ```
 
 3. `compare_m2.py` 
 
