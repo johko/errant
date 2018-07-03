@@ -88,8 +88,7 @@ Three main scripts are provided with ERRANT: `parallel_to_m2.py`, `m2_to_m2.py` 
 	 python3 parallel_to_m2.py -orig <orig_file> -cor <cor_file> -out <out_m2>
 	 ```
 
-		The script has been extended to work with German alongside English
-		including the options:
+    The script has been extended to work with German alongside English including the options:
 
     ```
     -lang {en,de}         Input language. Currently supported: en (default), de
