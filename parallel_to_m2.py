@@ -47,7 +47,7 @@ def main(args):
 			proc_cor = toolbox.applySpacy(cor_sent.strip(), nlp, args, treetagger)
 			# Write the original sentence to the output m2 file.
 			if args.tok:
-				out_m2.write("S "+orig_sent+"\n")
+				out_m2.write("S "+orig_sent.strip()+"\n")
 			else:
 				proc_orig_tokens = [token.text for token in proc_orig]
 				out_m2.write("S "+ " ".join(proc_orig_tokens)+"\n")
