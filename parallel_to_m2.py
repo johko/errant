@@ -46,11 +46,8 @@ def main(args):
 			proc_orig = toolbox.applySpacy(orig_sent.strip(), nlp, args, treetagger)
 			proc_cor = toolbox.applySpacy(cor_sent.strip(), nlp, args, treetagger)
 			# Write the original sentence to the output m2 file.
-			if args.tok:
-				out_m2.write("S "+orig_sent.strip()+"\n")
-			else:
-				proc_orig_tokens = [token.text for token in proc_orig]
-				out_m2.write("S "+ " ".join(proc_orig_tokens)+"\n")
+			proc_orig_tokens = [token.text for token in proc_orig]
+			out_m2.write("S "+ " ".join(proc_orig_tokens)+"\n")
 			# Identical sentences have no edits, so just write noop.
 			if orig_sent.strip() == cor_sent.strip():
 				out_m2.write("A -1 -1|||noop|||-NONE-|||REQUIRED|||-NONE-|||0\n")
