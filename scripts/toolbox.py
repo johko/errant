@@ -116,13 +116,12 @@ def applySpacy(input_sent, nlp, args, treetagger=None):
 					sent[i].lemma_ = tags[i].lemma
 
 				# if spacy provides an empty tag (as for —),
-				# first check for punctuation, otherwise use treetagger tag
+				# use treetagger tag, with an exception for German punctuation
 				if sent[i].tag_ == "":
+					sent[i].tag_ = tags[i].pos
 					if re.match(r'^\p{P}+$', sent[i].text):
 						if args.lang == "de":
 							sent[i].tag_ = "$("
-						else:
-							sent[i].tag_ = tags[i].pos
 
 	# check (again) for empty tags (as for —),
 	# check for punctuation, otherwise use XX
