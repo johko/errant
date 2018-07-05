@@ -1,4 +1,5 @@
 from spacy.tokens import Doc
+import regex as re
 
 # Load latest Hunspell dictionaries: 
 def loadDictionary(path):
@@ -112,6 +113,13 @@ def applySpacy(input_sent, nlp, args, treetagger=None):
 			for i in range(0, len(tags)):
 				if isinstance(tags[i], treetaggerwrapper.Tag):
 					sent[i].lemma_ = tags[i].lemma
+				# if spacy provides a blank tag (as for —),
+				# first check for punctuation, otherwise use treetagger tag
+				if sent[i].tag_ == "":
+					if re.match(r'^\p{P}+$', sent[i].text):
+						sent[i].tag_ = "$("
+					else:
+						sent[i].tag_ = tags[i].pos
 
 	return sent
 
