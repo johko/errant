@@ -111,15 +111,29 @@ def applySpacy(input_sent, nlp, args, treetagger=None):
 		tags = treetaggerwrapper.make_tags(treetagger.tag_text("\n".join(tokens) + "\n", tagonly=True))
 		if len(tokens) == len(tags):
 			for i in range(0, len(tags)):
+				# use treetagger lemmas
 				if isinstance(tags[i], treetaggerwrapper.Tag):
 					sent[i].lemma_ = tags[i].lemma
-				# if spacy provides a blank tag (as for —),
+
+				# if spacy provides an empty tag (as for —),
 				# first check for punctuation, otherwise use treetagger tag
 				if sent[i].tag_ == "":
 					if re.match(r'^\p{P}+$', sent[i].text):
-						sent[i].tag_ = "$("
-					else:
-						sent[i].tag_ = tags[i].pos
+						if args.lang == "de":
+							sent[i].tag_ = "$("
+						else:
+							sent[i].tag_ = tags[i].pos
+
+	# check (again) for empty tags (as for —),
+	# check for punctuation, otherwise use XX
+	for tok in sent:
+		if tok.tag_ == "":
+			tok.tag_ = "XX"
+			if re.match(r'^\p{P}+$', tok.text):
+				if args.lang == "en":
+					tok.tag_ = ":"
+				elif args.lang == "de":
+					tok.tag_ = "$("
 
 	return sent
 
