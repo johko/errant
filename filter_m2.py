@@ -27,7 +27,7 @@ def main(args):
 			edit_list = []
 			edit_set = set()
 			token_set = set()
-			for coder, coder_info in sorted(coder_dict.items()):
+			for coder, coder_info in coder_dict.items():
 				cor_sent = coder_info[0]
 				gold_edits = coder_info[1]
 				# If there is only 1 edit and it is noop, do nothing
@@ -64,7 +64,7 @@ def main(args):
 			long_other_edits = False
 			no_latin_chars = False
 			keep = False
-			for coder, coder_info in sorted(coder_dict.items()):
+			for coder, coder_info in coder_dict.items():
 				cor_sent = coder_info[0]
 				gold_edits = coder_info[1]
 				# If there is only 1 edit and it is noop, do nothing
