@@ -103,7 +103,7 @@ def main(args):
 			elif len(edit_set & skip_edit_sets) == 0:
 				keep = True
 			# skip sentences with no Latin characters in corrections
-			elif not re.match('\p{Latin}', ''.join(token_set)):
+			elif not re.search('\p{Latin}', ''.join(token_set)):
 				if args.debug:
 					print("NOLATIN", edit_list)
 				pass
