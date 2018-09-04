@@ -367,7 +367,7 @@ The German rules and rule ordering are still a work in progress.
 
 ### Part-Of-Speech
 
-POS-based error types are assigned based primarily on the POS tags of the edited tokens according to the [Stanford Universal Dependency](http://universaldependencies.org/tagset-conversion/en-penn-uposf.html) framework. These tags are sometimes too detailed for error annotation however, so we do not use: interjections (INTJ), numerals (NUM), symbols (SYM) or other (X).
+POS-based error types are assigned based primarily on the POS tags of the edited tokens according to the [Stanford Universal Dependency](http://universaldependencies.org/tagset-conversion/de-stts-uposf.html) framework. These tags are sometimes too detailed for error annotation however, so we do not use: interjections (INTJ), numerals (NUM), symbols (SYM) or other (X).
 
 In the majority of cases, an edit may be assigned a POS error category if it meets the following condition:
 
@@ -419,7 +419,7 @@ Although the definition of orthography can be quite broad, we use it here to ref
 
 ### Spelling: SPELL
 
-We use the latest [German German Hunspell dictionary word list](https://www.j3e.de/ispell/igerman98/dict/igerman98-20161207.tar.bz2)) to identify spelling errors. Alternative English dictionaries can also be used. It is assumed humans did not misspell their corrections.
+We use the latest [German Hunspell dictionary word list](https://www.j3e.de/ispell/igerman98/dict/igerman98-20161207.tar.bz2) to identify spelling errors. Alternative English dictionaries can also be used. It is assumed humans did not misspell their corrections.
 
 Spelling edits must meet the following conditions:
 
