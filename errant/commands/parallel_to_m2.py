@@ -106,39 +106,15 @@ def noop_edit(id=0):
     return "A -1 -1|||noop|||-NONE-|||REQUIRED|||-NONE-|||"+str(id)
 
 if __name__ == '__main__':
-    orig_test = """Jonathan
-
-Alexander & Bettina HERMANN
-Ludwig-Anzengruber-Gasse 38
-8750 Judenburg
-
-27. August 2020
-22:03 Uhr . 55 cm . 3810 Gramm
-
-Manchmal nehmen die kleinsten Dinge den größten Platz in unserem  
-Leben ein.
- 
+    orig_test = """
 Wir danken euch von Herzen für die Glückwünsche & Aufmerksamkeiten  
 anlässlich der Gebrut von Jonathan.
- 
-Alexander, Bettina und Jonathan"""
+ """
 
-    cor_test = """Jonathan
-
-Alexander & Bettina HERMANN
-Ludwig-Anzengruber-Gasse 38
-8750 Judenburg
-
-27. August 2020
-22:03 Uhr . 55 cm . 3810 Gramm
-
-Manchmal nehmen die kleinsten Dinge den größten Platz in unserem  
-Leben ein.
- 
+    cor_test = """
 Wir danken euch von Herzen für die Glückwünsche & Aufmerksamkeiten  
 anlässlich der Geburt von Jonathan.
- 
-Alexander, Bettina und Jonathan"""
+ """
 
     args = ["-orig", orig_test,
             "-cor", cor_test,

@@ -14,7 +14,8 @@ def load(lang, nlp=None):
         raise Exception("%s is an unsupported or unknown language" % lang)
 
     # Load spacy
-    nlp = nlp or spacy.load(lang, disable=["ner"])
+    lang_spacy = lang if not "de" else "de_core_news_md"
+    nlp = nlp or spacy.load(lang_spacy, disable=["ner"])
 
     # Load language edit merger
     merger = import_module("errant.%s.merger" % lang)
